@@ -1,0 +1,19 @@
+{
+  "name": "geektrust",
+  "version": "1.0.0",
+  "description": "geektrust-project",
+  "main": "index.js",
+  "scripts": {
+    "start": "node geektrust.js",
+    "test": "nyc mocha test.js"
+  },
+  "author": "geektrust",
+  "license": "ISC",
+  "dependencies": {
+    "chai": "^4.3.8",
+    "mocha": "^10.0.0"
+  },
+  "devDependencies": {
+    "nyc": "^15.1.0"
+  }
+}
