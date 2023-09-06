@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node geektrust.js",
-    "test": "nyc mocha test.js"
+    "test": "mocha test.js",
+    "coverage" : "nyc mocha test.js"
   },
   "author": "geektrust",
   "license": "ISC",
