@@ -1,133 +1,111 @@
 const { expect } = require("chai");
 const { describe } = require("mocha");
+const sinon = require("sinon");
 const { commands } = require("../src/commands");
+const { portfolioManager } = require("../src/portfolio-manager");
 
-let funds
-let folio
+let folioManager
+let mockFolioManager
 
-describe('Commands', ()=>{
+describe('Commands', () => {
 
-    beforeEach(()=>{
-        delete require.cache[require.resolve("../src/portfolio")];
-        delete require.cache[require.resolve("../src/funds-definition")];
-        const { portfolio } = require("../src/portfolio")
-        const { fundApi } = require("../src/funds-definition")
-        funds = fundApi
-        folio = portfolio(funds)
+    before(() => {
+        folioManager = portfolioManager({}, {})
     })
 
-    describe('Current portfolio', ()=>{
 
-        it('should add funds to folio', ()=> {
-            // const { portfolio } = require("../src/portfolio")
-            // const { fundApi } = require("../src/funds-definition")
-            // const folio = portfolio()
+    beforeEach(() => {
+        mockFolioManager = sinon.mock(folioManager)
+    })
+
+    afterEach(() => {
+        mockFolioManager.restore()
+    })
+
+    describe('Current portfolio', () => {
+
+        it('should add funds to folio', () => {
             const output = []
-            commands['CURRENT_PORTFOLIO']('AXIS_BLUECHIP ICICI_PRU_BLUECHIP UTI_NIFTY_INDEX', folio, funds, output)
-            expect(folio.exists('AXIS_BLUECHIP')).true
-            expect(folio.exists('ICICI_PRU_BLUECHIP')).true
-            expect(folio.exists('UTI_NIFTY_INDEX')).true
+            let folioManagerAddFundExpectations = mockFolioManager.expects('addFund').exactly(3)
+            commands['CURRENT_PORTFOLIO']('AXIS_BLUECHIP ICICI_PRU_BLUECHIP UTI_NIFTY_INDEX', folioManager, output)
+            sinon.assert.calledWith(folioManagerAddFundExpectations.getCall(0), 'AXIS_BLUECHIP')
+            sinon.assert.calledWith(folioManagerAddFundExpectations.getCall(1), 'ICICI_PRU_BLUECHIP')
+            sinon.assert.calledWith(folioManagerAddFundExpectations.getCall(2), 'UTI_NIFTY_INDEX')
             expect(output).empty
-        })
-        
-        it('should add funds to folio more than once', ()=> {
-            // const { portfolio } = require("../src/portfolio")
-            // const { fundApi } = require("../src/funds-definition")
-            // const folio = portfolio()
-            const output = []
-            commands['CURRENT_PORTFOLIO']('AXIS_BLUECHIP ICICI_PRU_BLUECHIP UTI_NIFTY_INDEX', folio, funds, output)
-            expect(folio.exists('AXIS_BLUECHIP')).true
-            expect(folio.exists('ICICI_PRU_BLUECHIP')).true
-            expect(folio.exists('UTI_NIFTY_INDEX')).true
-            expect(folio.exists('MIRAE_ASSET_EMERGING_BLUECHIP')).false
-            commands['CURRENT_PORTFOLIO']('MIRAE_ASSET_EMERGING_BLUECHIP', folio, funds, output)
-            expect(folio.exists('AXIS_BLUECHIP')).true
-            expect(folio.exists('ICICI_PRU_BLUECHIP')).true
-            expect(folio.exists('UTI_NIFTY_INDEX')).true
-            expect(folio.exists('MIRAE_ASSET_EMERGING_BLUECHIP')).true
-            expect(output).empty
+            folioManagerAddFundExpectations.verify()
         })
     })
 
-    describe('Add stock to fund', ()=>{
-        it('should add valid stock to fund', ()=>{
-            // const { portfolio } = require("../src/portfolio")
-            // const { fundApi } = require("../src/funds-definition")
-            // const folio = portfolio()
+    describe('Add stock to fund', () => {
+        it('should add valid stock to fund', () => {
             const output = []
-            let stockList = funds.stocks('SBI_LARGE_&_MIDCAP')
-            expect(stockList.length).equal(53)
-            commands['ADD_STOCK']('SBI_LARGE_&_MIDCAP HDFC BANK INDIA', folio, funds, output)
+            let folioManagerAddFundExpectations = mockFolioManager.expects('addStock').exactly(1)
+            folioManagerAddFundExpectations.onCall(0).returns(true)
+            commands['ADD_STOCK']('SBI_LARGE_&_MIDCAP HDFC BANK INDIA', folioManager, output)
             expect(output).empty
-            stockList = funds.stocks('SBI_LARGE_&_MIDCAP')
-            expect(stockList.length).equal(54)
-            expect(stockList.filter((element)=>{
-                return element === 'HDFC BANK INDIA'   
-            }).length).equal(1)
+            sinon.assert.calledWith(folioManagerAddFundExpectations.getCall(0), 'SBI_LARGE_&_MIDCAP', 'HDFC BANK INDIA')
+            folioManagerAddFundExpectations.verify()
         })
 
-        it('should report invalid fund', ()=>{
-            // const { portfolio } = require("../src/portfolio")
-            // const { fundApi } = require("../src/funds-definition")
-            // const folio = portfolio()
+        it('should report invalid fund', () => {
             const output = []
-            let stockList = funds.stocks('SBI_LARGE_&_MIDCAP')
-            expect(stockList.length).equal(53)
-            commands['ADD_STOCK']('SBI_LARGE_&_MIDCAP HDFC BANK INDIA', folio, funds, output)
-            expect(output).empty
-            stockList = funds.stocks('SBI_LARGE_&_MIDCAP')
-            expect(stockList.length).equal(54)
-            commands['ADD_STOCK']('SBI_LARGE_&_MIDCAP_NOWHERE HDFC BANK INDIA',folio, funds, output)
+            let folioManagerAddFundExpectations = mockFolioManager.expects('addStock').exactly(1)
+            folioManagerAddFundExpectations.onCall(0).returns(false)
+            commands['ADD_STOCK']('SBI_LARGE_&_MIDCAP HDFC BANK INDIA', folioManager, output)
+            expect(output.length).equals(1)
+            sinon.assert.calledWith(folioManagerAddFundExpectations.getCall(0), 'SBI_LARGE_&_MIDCAP', 'HDFC BANK INDIA')
+            folioManagerAddFundExpectations.verify()
             expect(output.length).equal(1)
             expect(output[0]).equal('FUND_NOT_FOUND')
         })
     })
 
-    describe('calculate overlap', ()=>{
-        it('should calculate overlap', ()=>{
-            // const { portfolio } = require("../src/portfolio")
-            // const { fundApi } = require("../src/funds-definition")
-            // const folio = portfolio()
+    describe('calculate overlap', () => {
+        it('should calculate overlap', () => {
             const output = []
-            folio.addFund('AXIS_BLUECHIP')
-            folio.addFund('ICICI_PRU_BLUECHIP')
-            folio.addFund('UTI_NIFTY_INDEX')
-
-            commands['CALCULATE_OVERLAP']('MIRAE_ASSET_EMERGING_BLUECHIP', folio,funds, output)
-            expect(output.length).equal(3)
-            expect(output[0]).equal('MIRAE_ASSET_EMERGING_BLUECHIP AXIS_BLUECHIP 39.13%')
-            expect(output[1]).equal('MIRAE_ASSET_EMERGING_BLUECHIP ICICI_PRU_BLUECHIP 38.10%')
-            expect(output[2]).equal('MIRAE_ASSET_EMERGING_BLUECHIP UTI_NIFTY_INDEX 65.52%')
-
+            let folioManagerAddFundExpectations = mockFolioManager.expects('calculateOverlap').exactly(1)
+            folioManagerAddFundExpectations.onCall(0).returns({
+                result: true,
+                overlapList: [
+                    { source: 'X', target: 'Y', overlapPercent: 33.112 },
+                    { source: 'X', target: 'A', overlapPercent: 43.177 }
+                ]
+            })
+            commands['CALCULATE_OVERLAP']('MIRAE_ASSET_EMERGING_BLUECHIP', folioManager, output)
+            expect(output.length).equal(2)
+            expect(output[0]).equal('X Y 33.11%')
+            expect(output[1]).equal('X A 43.18%')
+            folioManagerAddFundExpectations.verify()
         })
-        
-        it('should report no fund error', ()=>{
-            // const { portfolio } = require("../src/portfolio")
-            // const { fundApi } = require("../src/funds-definition")
-            // const folio = portfolio()
-            const output = []
-            folio.addFund('AXIS_BLUECHIP')
-            folio.addFund('ICICI_PRU_BLUECHIP')
-            folio.addFund('UTI_NIFTY_INDEX')
 
-            commands['CALCULATE_OVERLAP']('NIPPON_INDIA_PHARMA_FUND', folio, funds, output)
+        it('should report no fund error', () => {
+            const output = []
+            let folioManagerAddFundExpectations = mockFolioManager.expects('calculateOverlap').exactly(1)
+            folioManagerAddFundExpectations.onCall(0).returns({
+                result: false
+            })
+            commands['CALCULATE_OVERLAP']('MIRAE_ASSET_EMERGING_BLUECHIP', folioManager, output)
             expect(output.length).equal(1)
             expect(output[0]).equal('FUND_NOT_FOUND')
-
+            folioManagerAddFundExpectations.verify()
         })
-        
-        it('should not report no overlap', ()=>{
-            // const { portfolio } = require("../src/portfolio")
-            // const { fundApi } = require("../src/funds-definition")
-            // const folio = portfolio()
-            const output = []
-            folio.addFund('ICICI_PRU_NIFTY_NEXT_50_INDEX')
-            folio.addFund('PARAG_PARIKH_CONSERVATIVE_HYBRID')
-            folio.addFund('ICICI_PRU_BLUECHIP')
 
-            commands['CALCULATE_OVERLAP']('SBI_LARGE_&_MIDCAP', folio, funds, output)
-            expect(output.length).equal(1)
-            expect(output[0]).equal('SBI_LARGE_&_MIDCAP PARAG_PARIKH_CONSERVATIVE_HYBRID 8.47%')
+        it('should report non-zero overlap percent only', () => {
+            const output = []
+            let folioManagerAddFundExpectations = mockFolioManager.expects('calculateOverlap').exactly(1)
+            folioManagerAddFundExpectations.onCall(0).returns({
+                result: true,
+                overlapList: [
+                    { source: 'X', target: 'Y', overlapPercent: 33.112 },
+                    { source: 'X', target: 'B', overlapPercent: 0 },
+                    { source: 'X', target: 'A', overlapPercent: 43.177 }
+                ]
+            })
+            commands['CALCULATE_OVERLAP']('MIRAE_ASSET_EMERGING_BLUECHIP', folioManager, output)
+            expect(output.length).equal(2)
+            expect(output[0]).equal('X Y 33.11%')
+            expect(output[1]).equal('X A 43.18%')
+            folioManagerAddFundExpectations.verify()
 
         })
     })

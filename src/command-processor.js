@@ -1,10 +1,7 @@
-const { commands } = require("./commands");
-
-commandProcessor = (commandLine, folio, funds, output) => {
-
+commandProcessor = (commandLine, folioManager, commandProvider, output) => {
     let firstSpaceChar = commandLine.indexOf(' ');
     let command = commandLine.slice(0, firstSpaceChar)
-    commands[command](commandLine.slice(firstSpaceChar+1), folio, funds, output)
+    commandProvider[command](commandLine.slice(firstSpaceChar + 1), folioManager, output)
 }
 
 module.exports = { commandProcessor }
