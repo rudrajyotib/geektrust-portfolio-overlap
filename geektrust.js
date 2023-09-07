@@ -11,16 +11,11 @@ const filename = process.argv[2]
 const output = []
 const folioManager = portfolioManager(fundApi, portfolio())
 
-var lineReader = readline.createInterface({
+readline.createInterface({
     input: require('fs').createReadStream(filename)
-});
-
-
-lineReader.on('line', function (line) {
+}).on('line', function (line) {
     commandProcessor(line, folioManager, commands, output)
-});
-
-lineReader.on('close', () => {
+}).on('close', () => {
     output.forEach(element => {
         console.log(element)
     })
